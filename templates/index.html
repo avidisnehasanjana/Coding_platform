@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <title>Technical Skills Assessment</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/theme/material.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .navbar {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center; /* Center the content horizontally */
+            align-items: center;
+        }
+
+        .navbar h1 {
+            margin: 0;
+            font-size: 24px;
+            text-align: center; /* Center the text horizontally */
+        }
+
+        .challenge {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-top: 0;
+        }
+
+        .sample-io {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        pre {
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .code-form {
+            margin-top: 20px;
+        }
+
+        .language-select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .CodeMirror {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .note {
+            font-style: italic;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .testcase-tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .testcase-tab {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #f0f0f0;
+            transition: background 0.3s;
+        }
+
+        .testcase-tab.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .testcase-content {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 10px;
+            background: white;
+        }
+
+        .testcase-content.active {
+            display: block;
+        }
+
+        .passed {
+            color: green;
+        }
+
+        .failed {
+            color: red;
+        }
+
+        .score {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .summary {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #2c3e50;
+            color: white;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Welcome to Coding Challenges</h1>
+    </div>
+
+    {% for id, challenge in challenges.items() %}
+    <div class="challenge">
+        <h2>{{ challenge.title }}</h2>
+        <p>{{ challenge.description }}</p>
+        
+        <div class="sample-io">
+            <h4>Sample Input:</h4>
+            <pre>{{ challenge.sample_input }}</pre>
+            <h4>Sample Output:</h4>
+            <pre>{{ challenge.sample_output }}</pre>
+        </div>
+
+        <form class="code-form" data-challenge-id="{{ id }}">
+            <select name="language" class="language-select">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="java">Java</option>
+            </select>
+            <br>
+            <textarea name="code" class="code-editor" 
+                      data-skeleton-python="{{ challenge.skeleton_code.python }}"
+                      data-skeleton-javascript="{{ challenge.skeleton_code.javascript }}"
+                      data-skeleton-java="{{ challenge.skeleton_code.java }}">{{ challenge.skeleton_code.python }}</textarea>
+            <br>
+            <p class="note">Note: Complete the function logic below. Input/output handling is managed automatically.</p>
+            <br>
+            <button type="submit">Submit Code</button>
+        </form>
+        <div class="results" id="results-{{ id }}">
+            <div class="testcase-tabs" id="testcase-tabs-{{ id }}"></div>
+            <div class="testcase-contents" id="testcase-contents-{{ id }}"></div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer">
+        &copy; 2023 Coding Challenges. All rights reserved.
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/clike/clike.min.js"></script>
+    <script>
+        // Initialize CodeMirror editors
+        const editors = {};
+        document.querySelectorAll('.code-editor').forEach(ta => {
+            const editor = CodeMirror.fromTextArea(ta, {
+                lineNumbers: true,
+                mode: 'python',
+                theme: 'material',
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                extraKeys: { "Ctrl-Space": "autocomplete" }
+            });
+
+            // Mark skeleton lines as read-only
+            const skeletonCode = editor.getValue();
+            const skeletonLines = skeletonCode.split('\n').length - 1; // Exclude the last empty line
+            editor.on("beforeChange", (cm, change) => {
+                if (change.from.line < skeletonLines - 1) { // Protect all lines except the comment
+                    change.cancel();
+                }
+            });
+            for (let i = 0; i < skeletonLines - 1; i++) {
+                editor.addLineClass(i, 'background', 'CodeMirror-readonly');
+            }
+
+            editors[ta.closest('form').dataset.challengeId] = editor;
+        });
+
+        // Update skeleton code and syntax highlighting based on language
+        document.querySelectorAll('.language-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const challengeId = e.target.closest('form').dataset.challengeId;
+                const editor = editors[challengeId];
+                const language = e.target.value;
+                const skeletonAttr = `data-skeleton-${language}`;
+                const skeletonCode = e.target.nextElementSibling.nextElementSibling.getAttribute(skeletonAttr);
+                editor.setValue(skeletonCode);
+
+                // Reapply read-only lines after changing language
+                const skeletonLines = skeletonCode.split('\n').length - 1;
+                editor.off("beforeChange"); // Remove previous handler
+                editor.on("beforeChange", (cm, change) => {
+                    if (change.from.line < skeletonLines - 1) {
+                        change.cancel();
+                    }
+                });
+                for (let i = 0; i < skeletonLines - 1; i++) {
+                    editor.addLineClass(i, 'background', 'CodeMirror-readonly');
+                }
+
+                const mode = {
+                    'python': 'python',
+                    'javascript': 'javascript',
+                    'java': 'text/x-java'
+                }[language];
+                editor.setOption('mode', mode);
+            });
+        });
+
+        // Handle form submission
+        document.querySelectorAll('.code-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const challengeId = form.dataset.challengeId;
+                const code = editors[challengeId].getValue();
+                const language = form.querySelector('select').value;
+
+                const response = await fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challenge_id: challengeId, code, language })
+                });
+
+                const result = await response.json();
+                const resultsDiv = document.getElementById(`results-${challengeId}`);
+                const tabsDiv = document.getElementById(`testcase-tabs-${challengeId}`);
+                const contentsDiv = document.getElementById(`testcase-contents-${challengeId}`);
+                
+                if (result.error) {
+                    resultsDiv.innerHTML = `<p class="failed">Error: ${result.error}</p>`;
+                } else {
+                    // Create tabs for each test case
+                    tabsDiv.innerHTML = '';
+                    contentsDiv.innerHTML = '';
+
+                    result.results.forEach((r, index) => {
+                        const tab = document.createElement('div');
+                        tab.className = `testcase-tab ${index === 0 ? 'active' : ''}`;
+                        tab.textContent = r.case_name;
+                        tab.dataset.index = index;
+                        tabsDiv.appendChild(tab);
+
+                        const content = document.createElement('div');
+                        content.className = `testcase-content ${index === 0 ? 'active' : ''}`;
+                        let html = `<p>nums = ${JSON.stringify(r.nums)}</p>`;
+                        html += `<p>target = ${r.target}</p>`;
+                        if (r.error) {
+                            html += `<p class="failed">Error: ${r.error}</p>`;
+                        } else {
+                            html += `<p>Expected: ${JSON.stringify(r.expected)}</p>`;
+                            html += `<p>Got: ${JSON.stringify(r.got)}</p>`;
+                            html += `<p><span class="${r.passed ? 'passed' : 'failed'}">${r.passed ? '✓ Passed' : '✗ Failed'}</span> | Time: ${r.execution_time}</p>`;
+                        }
+                        content.innerHTML = html;
+                        contentsDiv.appendChild(content);
+                    });
+
+                    // Add tab switching logic
+                    tabsDiv.querySelectorAll('.testcase-tab').forEach(tab => {
+                        tab.addEventListener('click', () => {
+                            tabsDiv.querySelectorAll('.testcase-tab').forEach(t => t.classList.remove('active'));
+                            contentsDiv.querySelectorAll('.testcase-content').forEach(c => c.classList.remove('active'));
+                            tab.classList.add('active');
+                            contentsDiv.children[tab.dataset.index].classList.add('active');
+                        });
+                    });
+
+                    // Display score and summary
+                    resultsDiv.insertBefore(document.createElement('p'), tabsDiv).textContent = `Score: ${result.score.toFixed(2)}%`;
+                    resultsDiv.insertBefore(document.createElement('p'), tabsDiv).textContent = `Tests Passed: ${result.passed_tests}/${result.total_tests}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
